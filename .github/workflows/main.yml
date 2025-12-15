@@ -1,4 +1,5 @@
-name: Deploy AD Integrated HR App
+name: Deploy AD Integrated HR App (Full)
+
 
 on:
   workflow_dispatch:
@@ -11,7 +12,7 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v4
 
-    - name: Deploy to Windows Member Server
+    - name: Deploy to Domain Joined Server
       shell: pwsh
       run: |
         $secpasswd = ConvertTo-SecureString "${{ secrets.DEPLOY_PASS }}" -AsPlainText -Force
@@ -25,6 +26,12 @@ jobs:
 
         Invoke-Command -Session $session -ScriptBlock {
 
+            Write-Host "=== Installing IIS if missing ==="
+
+            Install-WindowsFeature `
+              -Name Web-Server,Web-Windows-Auth `
+              -IncludeManagementTools
+
             Import-Module WebAdministration
 
             $sitePath = "C:\inetpub\HRApp"
@@ -34,15 +41,20 @@ jobs:
             }
         }
 
-        Copy-Item -Path ".\HRApp\*" `
-                  -Destination "C:\inetpub\HRApp" `
-                  -Recurse `
-                  -ToSession $session `
-                  -Force
+        Write-Host "=== Copying HR App Files ==="
+
+        Copy-Item `
+          -Path ".\HRApp\*" `
+          -Destination "C:\inetpub\HRApp" `
+          -Recurse `
+          -Force `
+          -ToSession $session
 
         Invoke-Command -Session $session -ScriptBlock {
 
             Import-Module WebAdministration
+
+            Write-Host "=== Creating IIS Website if missing ==="
 
             if (!(Test-Path "IIS:\Sites\HRApp")) {
                 New-WebSite `
@@ -51,17 +63,19 @@ jobs:
                   -PhysicalPath "C:\inetpub\HRApp"
             }
 
+            Write-Host "=== Configuring Authentication ==="
+
             Set-WebConfigurationProperty `
-              -filter /system.webServer/security/authentication/windowsAuthentication `
-              -name enabled `
-              -value true `
+              -Filter /system.webServer/security/authentication/windowsAuthentication `
+              -Name enabled `
+              -Value true `
               -PSPath IIS:\ `
               -Location HRApp
 
             Set-WebConfigurationProperty `
-              -filter /system.webServer/security/authentication/anonymousAuthentication `
-              -name enabled `
-              -value false `
+              -Filter /system.webServer/security/authentication/anonymousAuthentication `
+              -Name enabled `
+              -Value false `
               -PSPath IIS:\ `
               -Location HRApp
 
