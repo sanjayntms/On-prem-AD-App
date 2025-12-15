@@ -1,11 +1,11 @@
 # On-prem-AD-App
 
 * winrm quickconfig -force
-  $cert = New-SelfSignedCertificate `
+*  $cert = New-SelfSignedCertificate `
   -DnsName "$env:COMPUTERNAME.ntms.local" `
   -CertStoreLocation Cert:\LocalMachine\My
- $cert.Thumbprint
- winrm create winrm/config/Listener?Address=*+Transport=HTTPS `
+* $cert.Thumbprint
+* winrm create winrm/config/Listener?Address=*+Transport=HTTPS `
   "@{Hostname='$env:COMPUTERNAME.ntms.local'; CertificateThumbprint='$($cert.Thumbprint)'}"
 * New-NetFirewallRule `
   -Name "WinRM-HTTPS" `
