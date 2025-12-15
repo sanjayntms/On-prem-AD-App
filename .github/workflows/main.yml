@@ -1,0 +1,71 @@
+name: Deploy AD Integrated HR App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Deploy to Windows Member Server
+      shell: pwsh
+      run: |
+        $secpasswd = ConvertTo-SecureString "${{ secrets.DEPLOY_PASS }}" -AsPlainText -Force
+        $cred = New-Object System.Management.Automation.PSCredential ("${{ secrets.DEPLOY_USER }}", $secpasswd)
+
+        $session = New-PSSession `
+          -ComputerName ${{ secrets.SERVER_IP }} `
+          -Credential $cred `
+          -UseSSL `
+          -SessionOption (New-PSSessionOption -SkipCACheck -SkipCNCheck)
+
+        Invoke-Command -Session $session -ScriptBlock {
+
+            Import-Module WebAdministration
+
+            $sitePath = "C:\inetpub\HRApp"
+
+            if (!(Test-Path $sitePath)) {
+                New-Item -ItemType Directory -Path $sitePath
+            }
+        }
+
+        Copy-Item -Path ".\HRApp\*" `
+                  -Destination "C:\inetpub\HRApp" `
+                  -Recurse `
+                  -ToSession $session `
+                  -Force
+
+        Invoke-Command -Session $session -ScriptBlock {
+
+            Import-Module WebAdministration
+
+            if (!(Test-Path "IIS:\Sites\HRApp")) {
+                New-WebSite `
+                  -Name "HRApp" `
+                  -Port 80 `
+                  -PhysicalPath "C:\inetpub\HRApp"
+            }
+
+            Set-WebConfigurationProperty `
+              -filter /system.webServer/security/authentication/windowsAuthentication `
+              -name enabled `
+              -value true `
+              -PSPath IIS:\ `
+              -Location HRApp
+
+            Set-WebConfigurationProperty `
+              -filter /system.webServer/security/authentication/anonymousAuthentication `
+              -name enabled `
+              -value false `
+              -PSPath IIS:\ `
+              -Location HRApp
+
+            iisreset
+        }
+
+        Remove-PSSession $session
