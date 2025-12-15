@@ -1,5 +1,5 @@
 # On-prem-AD-App
-
+* Optional step - If you want to deploy it using Github actions
 * winrm quickconfig -force
 *  $cert = New-SelfSignedCertificate `
   -DnsName "$env:COMPUTERNAME.ntms.local" `
