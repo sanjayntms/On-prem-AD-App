@@ -1,5 +1,20 @@
 # On-prem-AD-App
 
+* winrm quickconfig -force
+* $cert = New-SelfSignedCertificate `
+  -DnsName "$env:COMPUTERNAME.ntms.local" `
+  -CertStoreLocation Cert:\LocalMachine\My
+* $cert.Thumbprint
+* winrm create winrm/config/Listener?Address=*+Transport=HTTPS `
+*  "@{Hostname='$env:COMPUTERNAME.ntms.local'; CertificateThumbprint='$($cert.Thumbprint)'}"
+* New-NetFirewallRule `
+*  -Name "WinRM-HTTPS" `
+*  -Protocol TCP `
+*  -LocalPort 5986 `
+*  -Direction Inbound `
+*  -Action Allow
+* Allow in NSG - TCP 5986
+
 # 1 Create OUs, Groups, Users
 
 Run on DC1
