@@ -1,28 +1,65 @@
 using System;
-using System.Security.Principal;
+using System.IO;
+using System.Web;
 
 public partial class _Default : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
-        WindowsIdentity user = (WindowsIdentity)User.Identity;
-        lblUser.Text = user.Name;
+        // Example: show current Windows user
+        if (!IsPostBack)
+        {
+            lblUser.Text = Context.User != null ? Context.User.Identity.Name : "Unknown";
 
-        if (User.IsInRole(@"DOMAIN\HR-Admins"))
-        {
-            adminPanel.Visible = true;
-        }
-        else if (User.IsInRole(@"DOMAIN\HR-Managers"))
-        {
-            managerPanel.Visible = true;
-        }
-        else if (User.IsInRole(@"DOMAIN\HR-Employees"))
-        {
+            // Simple demo logic: show Employee panel for everyone
+            adminPanel.Visible = false;
+            managerPanel.Visible = false;
             employeePanel.Visible = true;
         }
-        else
+    }
+
+    protected void btnQuickApplyLeave_Click(object sender, EventArgs e)
+    {
+        try
         {
-            Response.Write("❌ Access Denied");
+            string userName = lblUser.Text;
+            string leaveDate = DateTime.Now.ToString("yyyy-MM-dd");
+            string timeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+            string line = string.Format(
+                "{0} | User: {1} | Leave Date: {2} | Type: QuickApply",
+                timeStamp,
+                userName,
+                leaveDate
+            );
+
+            // Write to App_Data/LeaveRequests.txt
+            string filePath = Server.MapPath("~/App_Data/LeaveRequests.txt");
+
+            // Ensure directory exists
+            string dir = Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            File.AppendAllText(filePath, line + Environment.NewLine);
+
+            ClientScript.RegisterStartupScript(
+                this.GetType(),
+                "leaveSaved",
+                "alert('Leave request saved successfully.');",
+                true
+            );
+        }
+        catch
+        {
+            ClientScript.RegisterStartupScript(
+                this.GetType(),
+                "leaveError",
+                "alert('Unable to save leave request. Please contact IT.');",
+                true
+            );
         }
     }
 }
