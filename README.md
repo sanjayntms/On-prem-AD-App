@@ -86,13 +86,16 @@ iisreset
 
 # Step 5 — IIS Site Configuration
 Import-Module WebAdministration
-New-Item -ItemType Directory -Path "C:\inetpub\HRApp"
+New-Item -ItemType Directory -Path "C:\inetpub\HRApp" # Copy contents
+ from hrapp here.
 
 New-WebSite -Name HRApp -Port 80 -PhysicalPath "C:\inetpub\HRApp"
 
 Remove-WebBinding -Name HRApp -Port 80 -Protocol http
 New-WebBinding -Name HRApp -Port 80 -HostHeader "hrapp.ntms.local"
 <img width="1412" height="730" alt="image" src="https://github.com/user-attachments/assets/fd91c8f4-b154-4ce6-bf27-b3da4f41c875" />
+
+icacls C:\inetpub\HRApp\App_Data /grant "IIS AppPool\DefaultAppPool:(OI)(CI)(M)" /T
 
 
 # Step 6 — IIS Authentication Settings
