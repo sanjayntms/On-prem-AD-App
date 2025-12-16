@@ -86,7 +86,7 @@ iisreset
 
 # Step 5 — IIS Site Configuration
 Import-Module WebAdministration
-New-Item -ItemType Directory -Path "C:\inetpub\HRApp1"
+New-Item -ItemType Directory -Path "C:\inetpub\HRApp"
 
 New-WebSite -Name HRApp -Port 80 -PhysicalPath "C:\inetpub\HRApp"
 
